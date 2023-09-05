@@ -6,20 +6,20 @@ fn immediate(nes: &mut Nes) -> u8 {
     nes.nextOp() 
 }
 
-fn zero_page(nes: &mut Nes) ->usize{
-    nes.nextOp() as usize
+fn zero_page(nes: &mut Nes) ->u8{
+    nes.nextOp() 
 }
-fn zero_page_x(nes: &mut Nes) ->usize{
-    (nes.nextOp() +nes.x) as usize
+fn zero_page_x(nes: &mut Nes) ->u8{
+    (nes.nextOp() +nes.x) 
 }
-fn zero_page_y(nes: &mut Nes) -> usize{
-    (nes.nextOp() + nes.y) as usize
+fn zero_page_y(nes: &mut Nes) -> u8{
+    (nes.nextOp() + nes.y) as u8
 }
-fn absolute(nes: &mut Nes) -> usize{
-    nes.nextabs() as usize
+fn absolute(nes: &mut Nes) -> u16{
+    nes.nextabs()
 
 }
-fn absolute_x(nes: &mut Nes) -> usize{
+fn absolute_x(nes: &mut Nes) -> u16{
     let address = nes.nextabs();
     if page_crossed(address, nes.x) {
         nes.page_cross = 1;
@@ -27,9 +27,9 @@ fn absolute_x(nes: &mut Nes) -> usize{
     else {
         nes.page_cross = 0;
     }
-    (address + nes.x as u16) as usize
+    (address + nes.x as u16)
 }
-fn absolute_y(nes: &mut Nes) -> usize{
+fn absolute_y(nes: &mut Nes) -> u16{
     let address = nes.nextabs();
     if page_crossed(address, nes.y) {
         nes.page_cross = 1;
@@ -37,18 +37,18 @@ fn absolute_y(nes: &mut Nes) -> usize{
     else {
         nes.page_cross = 0;
     }
-    (address + nes.y as u16) as usize as usize
+    (address + nes.y as u16)
 }
-fn indexed_indirect_x(nes: &mut Nes) -> usize{
+fn indexed_indirect_x(nes: &mut Nes) -> u16{
     let add = nes.nextOp() + nes.x;
-    let bit1 = nes.memory[add as usize];
-    let bit2 = nes.memory[(add+1) as usize];
-    endian(bit1, bit2) as usize
+    let bit1 = nes.read_memory(add as u16);
+    let bit2 = nes.read_memory((add+1) as u16);
+    endian(bit1, bit2) as u16
 }
-fn indirect_indexed_y(nes: &mut Nes) -> usize{
+fn indirect_indexed_y(nes: &mut Nes) -> u16{
     let add = nes.nextOp();
-    let bit1 = nes.memory[add as usize];
-    let bit2 = nes.memory[(add+1) as usize];
+    let bit1 = nes.read_memory(add as u16);
+    let bit2 = nes.read_memory((add+1) as u16);
     let address = endian(bit1,bit2);
     if page_crossed(address, nes.y) {
         nes.page_cross = 1;
@@ -56,20 +56,20 @@ fn indirect_indexed_y(nes: &mut Nes) -> usize{
     else {
         nes.page_cross = 0;
     }
-    (endian(bit1, bit2) + nes.y as u16) as usize
+    (endian(bit1, bit2) + nes.y as u16) as u16
 
 }
 fn relative(nes: &mut Nes) -> u16 {
     ((nes.nextOp() as i8) as i16) as u16
 }
 fn indirect(nes:&mut Nes) -> u16 {
-    let address = nes.nextabs() as usize;
-    let bit1 = nes.memory[address];
+    let address = nes.nextabs();
+    let bit1 = nes.read_memory(address);
     let mut offset = 0;
     if page_crossed(address as u16, 1){
         offset = 0x100;
     }
-    let bit2 = nes.memory[address+1 - offset];
+    let bit2 = nes.read_memory(address+1 - offset);
     let ind = endian(bit1, bit2);
 
     //eprintln!("{:#x} found at address {:#x}", ind, address);
@@ -120,25 +120,28 @@ fn op69(nes : &mut Nes ) -> u8{
 //zeropage
 fn op65(nes : &mut Nes)-> u8{
     let address = zero_page(nes);
-    add_with_carry(nes, nes.memory[address as usize]);
+    let mem_value = nes.read_memory(address as u16);
+    add_with_carry(nes,mem_value); ;
     3
 }
 //zeropagex
 fn op75(nes: &mut Nes) -> u8{
     let address = zero_page_x(nes);
-    add_with_carry(nes, nes.memory[address as usize]);
+    let mem_value = nes.read_memory(address as u16);
+    add_with_carry(nes,mem_value); 
     4
 }
 // absolute 
 fn op6D(nes: &mut Nes) -> u8{
     let address = absolute(nes);
-    add_with_carry(nes, nes.memory[address as usize]);
+    let mem_value = nes.read_memory(address as u16);
+    add_with_carry(nes,mem_value); 
     4
 }
 // absolute x
 fn op7D(nes: &mut Nes) -> u8{
     let address = absolute_x(nes);
-    let b = nes.memory[address as usize];
+    let b = nes.read_memory(address as u16);
     add_with_carry(nes, b);
     4 + nes.page_cross
     
@@ -146,7 +149,7 @@ fn op7D(nes: &mut Nes) -> u8{
 //absolute y 
 fn op79(nes: &mut Nes) -> u8{
     let address = absolute_y(nes);
-    let b = nes.memory[address as usize];
+    let b = nes.read_memory(address as u16);
     add_with_carry(nes, b);
     4 + nes.page_cross
 
@@ -154,7 +157,7 @@ fn op79(nes: &mut Nes) -> u8{
 //index_inderect x
 fn op61(nes: &mut Nes) -> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     add_with_carry(nes, a);
     6
 
@@ -162,7 +165,7 @@ fn op61(nes: &mut Nes) -> u8{
 //inderect_index
 fn op71(nes: &mut Nes) -> u8{
    let address = indirect_indexed_y(nes);
-   let a = nes.memory[address as usize];
+   let a = nes.read_memory(address as u16);
    add_with_carry(nes, a);
    5+ nes.page_cross
 
@@ -191,49 +194,49 @@ fn op29(nes: &mut Nes) -> u8{
 //zeropage
 fn op25(nes: &mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     3
 }
 //zeropagex
 fn op35(nes: &mut Nes)-> u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     4
 }
 //absolute
 fn op2D(nes: &mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     4
 }
 //absolute x
 fn op3D(nes: &mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     4 + nes.page_cross
 }
 //absolute y 
 fn op39(nes: &mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     4 + nes.page_cross
 }
 //index_inderect x
 fn op21(nes: &mut Nes) -> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     6
 }
 //inderect_index y
 fn op31(nes: &mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address as usize];
+    let a = nes.read_memory(address as u16);
     logical_and(nes, a);
     5 + nes.page_cross
 }
@@ -264,26 +267,34 @@ fn op0A(nes: &mut Nes)-> u8{
 // zero page
 fn op06(nes: &mut Nes)->u8{
     let address = zero_page(nes);
-    nes.memory[address] = arithmatic_shift_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = arithmatic_shift_left(nes, mem_value);
+    nes.write_memory(address as u16 ,value);
     5
 
 }
 //zero page x
 fn op16(nes: &mut Nes)->u8{
     let address = zero_page_x(nes);
-    nes.memory[address] = arithmatic_shift_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = arithmatic_shift_left(nes, mem_value);
+    nes.write_memory(address as u16 ,value);
     6
 }
 //absolute
 fn op0E(nes: &mut Nes)->u8{
     let address = absolute(nes);
-    nes.memory[address] = arithmatic_shift_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = arithmatic_shift_left(nes, mem_value);
+    nes.write_memory(address as u16 ,value);
     6
 }
 //absolute x
 fn op1E(nes: &mut Nes)-> u8{
     let address = absolute_x(nes);
-    nes.memory[address] = arithmatic_shift_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = arithmatic_shift_left(nes, mem_value);
+    nes.write_memory(address as u16 ,value);
     7
 }
 
@@ -334,7 +345,7 @@ fn bit_test(nes: &mut Nes, a: u8){
 //zero page 
 fn op24(nes: &mut Nes)-> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     bit_test(nes, a);
     3
 
@@ -343,7 +354,7 @@ fn op24(nes: &mut Nes)-> u8{
 //absolute 
 fn op2C(nes: &mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     bit_test(nes, a);
     4
 }
@@ -386,8 +397,8 @@ fn op00(nes: &mut Nes) -> u8{
     nes.push_to_stack(bytes[1]);
     nes.push_to_stack(bytes[0]);
     nes.push_to_stack(nes.p);
-    let byte1 = nes.memory[0xFFFE];
-    let byte2 = nes.memory[0xFFFF];
+    let byte1 = nes.read_memory(0xFFFE);
+    let byte2 = nes.read_memory(0xFFFF);
     nes.pc = endian(byte1, byte2);
     nes.set_flags(0b10000);
     7
@@ -471,7 +482,7 @@ fn opC9(nes: &mut Nes)->u8{
 //zeropage 
 fn opC5(nes: &mut Nes)->u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     compare_acc(nes, a);
     3
 }
@@ -479,7 +490,7 @@ fn opC5(nes: &mut Nes)->u8{
 //zeropagex 
 fn opD5(nes: &mut Nes)->u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     compare_acc(nes, a);
     4
 
@@ -487,7 +498,7 @@ fn opD5(nes: &mut Nes)->u8{
 //absolute
 fn opCD(nes: &mut Nes)->u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_acc(nes, a);
     4
 }
@@ -495,7 +506,7 @@ fn opCD(nes: &mut Nes)->u8{
 //absolute x
 fn opDD(nes: &mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_acc(nes, a);
     4+nes.page_cross
 }
@@ -503,14 +514,14 @@ fn opDD(nes: &mut Nes) -> u8{
 //absolute_y
 fn opD9(nes: &mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_acc(nes, a);
     4+nes.page_cross
 }
 //index_inderect 
 fn opC1(nes: &mut Nes)-> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_acc(nes, a);
     6
 }
@@ -518,7 +529,7 @@ fn opC1(nes: &mut Nes)-> u8{
 //inderect_index
 fn opD1(nes: &mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_acc(nes, a);
     5+nes.page_cross
 }
@@ -533,14 +544,14 @@ fn opE0(nes: &mut Nes)->u8{
 //zeropage
 fn opE4(nes: &mut Nes)->u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     compare_x(nes, a);
     3
 }
 //absolute 
 fn opEC(nes: &mut Nes)->u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_x(nes, a);
     4
 }
@@ -555,22 +566,22 @@ fn opC0(nes: &mut Nes)->u8{
 //zeropage
 fn opC4(nes: &mut Nes)->u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     compare_y(nes, a);
     3
 }
 //absolute 
 fn opCC(nes: &mut Nes)->u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     compare_y(nes, a);
     4
 }
 
 //dec memory 
 
-fn decrement_mem(nes: &mut Nes,address: usize){
-    let c = nes.memory[address] -1;
+fn decrement_mem(nes: &mut Nes,address: u16){
+    let c = nes.read_memory(address as u16) -1;
     nes.reset_flags(0b10000010);
     if (c as i8)< 0 {
         nes.set_flags(0b10000000);
@@ -578,19 +589,19 @@ fn decrement_mem(nes: &mut Nes,address: usize){
     if c == 0 {
         nes.set_flags(0b10);
     }
-    nes.memory[address] = c;
+    nes.write_memory(address as u16,c);
 }
 
 //zeropage 
 fn opC6(nes: &mut Nes)->u8{
     let address = zero_page(nes);
-    decrement_mem(nes, address);
+    decrement_mem(nes, address as u16);
     5
 }
 //zeropage x
 fn opD6(nes: &mut Nes)->u8{
     let address = zero_page_x(nes);
-    decrement_mem(nes, address);
+    decrement_mem(nes, address as u16);
     6
 }
 //absolute
@@ -655,7 +666,7 @@ fn op49(nes: &mut Nes) -> u8{
 //zeropage 
 fn op45(nes: &mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     eor(nes, a);
     3
 }
@@ -663,50 +674,50 @@ fn op45(nes: &mut Nes) -> u8{
 //zeropagex
 fn op55(nes: &mut Nes)->u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     eor(nes, a);
     4
 }
 //absolute 
 fn op4D(nes: &mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     eor(nes,a);
     4
 }
 //absolute x 
 fn op5D(nes: &mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     eor(nes,a);
     4 + nes.page_cross
 }
 //absolute_y
 fn op59(nes: &mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     eor(nes,a);
     4 + nes.page_cross
 }
 //index_inderect
 fn op41(nes: &mut Nes)->u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     eor(nes, a);
     6
 }
 //inderect_index 
 fn op51(nes:&mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     eor(nes,a);
     5 + nes.page_cross
 }
 
 //increment memory 
-fn increment_mem(nes:&mut Nes, address: usize){
+fn increment_mem(nes:&mut Nes, address: u16){
     nes.reset_flags(0b10000010);
-    let c = nes.memory[address]+1;
+    let c = nes.read_memory(address as u16)+1;
     //eprintln!("incrementing {:#x} at address {:#x}", c-1 , address);
     if c == 0 {
         nes.set_flags(0b10);
@@ -715,19 +726,19 @@ fn increment_mem(nes:&mut Nes, address: usize){
         nes.set_flags(0b10000000);
 
     }
-    nes.memory[address] = c;
+    nes.write_memory(address as u16, c);
 }
 //zeropage
 fn opE6(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    increment_mem(nes, address);
+    increment_mem(nes, address as u16);
     5
 }
 
 //zeropagex 
 fn opF6(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    increment_mem(nes, address);
+    increment_mem(nes, address as u16);
     6
 }
 
@@ -819,49 +830,49 @@ fn opA9(nes:&mut Nes)->u8{
 //zero page 
 fn opA5(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_acc(nes, a);
     3
 }
 //zero page x 
 fn opB5(nes:&mut Nes)->u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_acc(nes, a);
     4
 }
 //absolute 
 fn opAD(nes:&mut Nes)->u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_acc(nes,a);
     4
 }
 //absolute_x
 fn opBD(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_acc(nes, a);
     4+nes.page_cross
 }
 //absolute_y
 fn opB9(nes:&mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_acc(nes, a);
     4 + nes.page_cross
 }
 //indexed_indirect_x
 fn opA1(nes:&mut Nes) -> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_acc(nes, a);
     6
 }
 //indirect_indexed_y
 fn opB1(nes:&mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_acc(nes, a);
     5 + nes.page_cross
 }
@@ -888,28 +899,28 @@ fn opA2(nes:&mut Nes) -> u8{
 //zeropage
 fn opA6(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_x(nes, a);
     3
 }
 //zero_page_y
 fn opB6(nes:&mut Nes) -> u8{
     let address = zero_page_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_x(nes, a);
     4
 }
 //absolute
 fn opAE(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_x(nes, a);
     4
 }
 //absolute_y
 fn opBE(nes:&mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_x(nes, a);
     4 + nes.page_cross
 }
@@ -935,28 +946,28 @@ fn opA0(nes:&mut Nes) -> u8{
 //zeropage
 fn opA4(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_y(nes, a);
     3
 }
 //zero_page_x
 fn opB4(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     load_y(nes, a);
     4
 }
 //absolute
 fn opAC(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_y(nes, a);
     4
 }
 //absolute_x
 fn opBC(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     load_y(nes, a);
     4 + nes.page_cross
 }
@@ -985,25 +996,33 @@ fn op4A(nes:&mut Nes) -> u8{
 //zeropage
 fn op46(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    nes.memory[address] = logical_shift_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = logical_shift_right(nes, mem_value);
+    nes.write_memory(address as u16,value);
     5
 }
 //zero_page_x
 fn op56(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    nes.memory[address] = logical_shift_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = logical_shift_right(nes, mem_value);
+    nes.write_memory(address as u16,value);
     6
 }
 //absolute
 fn op4E(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    nes.memory[address] = logical_shift_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = logical_shift_right(nes, mem_value);
+    nes.write_memory(address as u16,value);
     6
 }
 //absolute x
 fn op5E(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    nes.memory[address]= logical_shift_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = logical_shift_right(nes, mem_value);
+    nes.write_memory(address as u16,value);
     7
 }
 // nop 
@@ -1031,49 +1050,49 @@ fn op09(nes:&mut Nes) -> u8{
 //zeropage
 fn op05(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     logical_or(nes, a);
     3
 }
 //zero_page_x
 fn op15(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     logical_or(nes, a);
     4
 }
 //absolute
 fn op0D(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     logical_or(nes, a);
     4
 }
 //absolute_x
 fn op1D(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     logical_or(nes, a);
     4 + nes.page_cross
 }
 //absolute_y
 fn op19(nes:&mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     logical_or(nes, a);
     4 + nes.page_cross
 }
 //indexed_indirect_x
 fn op01(nes:&mut Nes) -> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     logical_or(nes, a);
     6
 }
 //indirect_indexed_y
 fn op11(nes:&mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     logical_or(nes, a);
     5 + nes.page_cross
 }
@@ -1131,25 +1150,33 @@ fn op2A(nes:&mut Nes) -> u8{
 //zero_page
 fn op26(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    nes.memory[address] = rotate_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_left(nes, mem_value);
+    nes.write_memory(address as u16, value);
     5
 }
 //zero_page_x
 fn op36(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    nes.memory[address]= rotate_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_left(nes, mem_value);
+    nes.write_memory(address as u16, value);
     6
 }
 //absolute
 fn op2E(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    nes.memory[address] = rotate_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_left(nes, mem_value);
+    nes.write_memory(address as u16, value);
     6
 }
 //absolute x
 fn op3E(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    nes.memory[address] = rotate_left(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_left(nes, mem_value);
+    nes.write_memory(address as u16, value);
     7
 }
 //rotate right
@@ -1178,28 +1205,36 @@ fn op6A(nes:&mut Nes) -> u8{
 //zeropage
 fn op66(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    nes.memory[address] = rotate_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_right(nes, mem_value);
+    nes.write_memory(address as u16, value);
     5
 
 }
 //zeropagex
 fn op76(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    nes.memory[address] = rotate_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_right(nes, mem_value);
+    nes.write_memory(address as u16, value);
     6
 
 }
 //absolute
 fn op6E(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    nes.memory[address] = rotate_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_right(nes, mem_value);
+    nes.write_memory(address as u16, value);
     6
 
 }
 //absolute x
 fn op7E(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    nes.memory[address] = rotate_right(nes, nes.memory[address]);
+    let mem_value = nes.read_memory(address as u16);
+    let value = rotate_right(nes, mem_value);
+    nes.write_memory(address as u16, value);
     7
 
 }
@@ -1255,14 +1290,14 @@ fn opE9(nes:&mut Nes) -> u8{
 //zeropage
 fn opE5(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     subtract_with_carry(nes, a);
     3
 }
 //zeropagex
 fn opF5(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address as u16);
     subtract_with_carry(nes, a);
     4
 
@@ -1271,14 +1306,14 @@ fn opF5(nes:&mut Nes) -> u8{
 //absolute
 fn opED(nes:&mut Nes) -> u8{
     let address = absolute(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     subtract_with_carry(nes, a);
     4
 }
 //absolute x
 fn opFD(nes:&mut Nes) -> u8{
     let address = absolute_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     subtract_with_carry(nes, a);
     4 + nes.page_cross
 
@@ -1286,7 +1321,7 @@ fn opFD(nes:&mut Nes) -> u8{
 //absolute y
 fn opF9(nes:&mut Nes) -> u8{
     let address = absolute_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     subtract_with_carry(nes, a);
     4 + nes.page_cross
 
@@ -1294,14 +1329,14 @@ fn opF9(nes:&mut Nes) -> u8{
 //indexed_indirect_x
 fn opE1(nes:&mut Nes) -> u8{
     let address = indexed_indirect_x(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     subtract_with_carry(nes, a);
     6
 }
 //indirect_indexed_y
 fn opF1(nes:&mut Nes) -> u8{
     let address = indirect_indexed_y(nes);
-    let a = nes.memory[address];
+    let a = nes.read_memory(address);
     subtract_with_carry(nes, a);
     5 + nes.page_cross
 }
@@ -1322,20 +1357,20 @@ fn op78(nes:&mut Nes) -> u8{
     2
 }
 //store accumulator
-fn store_acc(nes:&mut Nes,address: usize){
+fn store_acc(nes:&mut Nes,address: u16){
     //eprintln!("storing {:#x} at address {:#x}",nes.acc,address);
-    nes.memory[address] = nes.acc;
+    nes.write_memory(address, nes.acc);
 }
 //zeropage
 fn op85(nes:&mut Nes) -> u8{
    let address = zero_page(nes); 
-    store_acc(nes, address);
+    store_acc(nes, address as u16);
     3
 }
 //zeropagex
 fn op95(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    store_acc(nes, address);
+    store_acc(nes, address as u16);
     4
 }
 //absolute
@@ -1369,20 +1404,20 @@ fn op91(nes:&mut Nes) -> u8{
     6
 }
 //store x
-fn store_x(nes:&mut Nes,address: usize){
-    nes.memory[address] = nes.x;
+fn store_x(nes:&mut Nes,address: u16){
+    nes.write_memory(address,nes.x);
 
 }
 //zeropage
 fn op86(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    store_x(nes, address);
+    store_x(nes, address as u16);
     3
 }
 //zero_page_y
 fn op96(nes:&mut Nes) -> u8{
     let address = zero_page_y(nes);
-    store_x(nes, address);
+    store_x(nes, address as u16);
     4
 }
 //absolute
@@ -1392,20 +1427,20 @@ fn op8E(nes:&mut Nes) -> u8{
     4
 }
 //store y
-fn store_y(nes:&mut Nes,address: usize){
-    nes.memory[address] = nes.y;
+fn store_y(nes:&mut Nes,address: u16){
+    nes.write_memory(address,nes.y);
 
 }
 //zeropage
 fn op84(nes:&mut Nes) -> u8{
     let address = zero_page(nes);
-    store_y(nes, address);
+    store_y(nes, address as u16);
     3
 }
 //zero_page_x
 fn op94(nes:&mut Nes) -> u8{
     let address = zero_page_x(nes);
-    store_y(nes, address);
+    store_y(nes, address as u16);
     4
 }
 //absolute
@@ -1564,13 +1599,9 @@ pub fn run_op_code(nes:&mut Nes, op:u8) -> u8{
         0x80 | 0x82 | 0x89 | 0xC2 | 0xE2 => op80(nes),
         0x1C | 0x3C | 0x5C | 0x7C | 0xDC | 0xFC => op1C(nes),
 
-        _ => 255
+        _ => panic!("op code {:#x} not found", op)
 
     };
-   if cycles == 255{
-       //println!("op code {:#x} not found", op);
-       eprintln!("op code {:#x} not found", op);
 
-   }
    cycles
 }

@@ -3,6 +3,7 @@ use crate::helper::*;
 use std::fs::File;
 use std::io::Read;
 use std::os::unix::prelude::FileExt;
+use crate::ppu::Mirroring;
 #[allow(dead_code)]
 struct Header {
     mapper : u8,
@@ -68,9 +69,20 @@ pub fn mapper000(nes : &mut Nes, rom: &mut Rom){
     rom.file.read_at(&mut nes.memory[0x8000..0xBFFF], prg_rom_offset).expect("err reading");
     if rom.header.prg_rom_size > 1 {
         rom.file.read_at(&mut nes.memory[0xC000..0xFFFF], prg_rom_offset + 16384).expect("err reading");
+        prg_rom_offset += 0x4000;
     }
     else {
         rom.file.read_at(&mut nes.memory[0xC000..0xFFFF], prg_rom_offset).expect("err reading");
     }
+    prg_rom_offset += 0x4000;
+    rom.file.read_at(&mut nes.ppu.memory[0..0x2000], prg_rom_offset).expect("err reading rom");
+    if rom.header.mirroring == 0 {
+        nes.ppu.mirroring = Mirroring::Horizontal;
+    }
+    else {
+        nes.ppu.mirroring = Mirroring::Vertical;
+    }
+    //println!("{:?}",&mut nes.ppu.memory[0..0x2000] );
+
 
 }
