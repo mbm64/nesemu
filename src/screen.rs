@@ -38,7 +38,7 @@ impl Screen {
         }
 
     }
-    pub fn draw_sprite_behind_bg(&mut self, x:usize, y:usize,bg:u8, tile:[u8;64]){
+    pub fn draw_sprite_behind_bg(&mut self, x:usize, y:usize,bg:u8, tile:[u8;64], overlapped: &mut bool){
 
         for i in 0..8 {
             if (x + i) >= 256 { continue; }
@@ -51,12 +51,36 @@ impl Screen {
                 }
                 let bgc = self.get_pixel(x+i, y+j);
                 if bgc != PALLETE[bg as usize] {
+                    *overlapped = true;
                     continue;
                 }
                 self.set_pixel(x+i, y+j, color);
                 
             }
         }
+
+    }
+    pub fn draw_sprite_0(&mut self, x:usize, y:usize,bg:u8, tile:[u8;64],overlapped: &mut bool){
+        for i in 0..8 {
+            if (x + i) >= 256 { continue; }
+            for j in 0..8 {
+
+                if y+j>= 240 {continue;}
+                let color = self.get_color(tile[i + 8*j] );
+                if color == 0xffffffff {
+                    continue;
+                    
+                }
+                let bgc = self.get_pixel(x+i, y+j);
+                if bgc != PALLETE[bg as usize] {
+                    *overlapped = true;
+                    println!("overlap");
+                }
+                self.set_pixel(x+i, y+j, color);
+                
+            }
+        }
+        
 
     }
 
@@ -150,13 +174,23 @@ impl Screen {
                 _ => panic!("error in tile render")
                 
             };
+            let mut overlap = false;
             if prio > 0{
                 let bg = ppu.read_ppudata_add(0x3f00);
-                self.draw_sprite_behind_bg(x as usize, y as usize, bg, flipped_tile);
+                self.draw_sprite_behind_bg(x as usize, y as usize, bg, flipped_tile,&mut overlap);
                 
             }
-            else {
+            else{
+                let bg = ppu.read_ppudata_add(0x3f00);
+                self.draw_sprite_0(x as usize, y as usize, bg, flipped_tile,&mut overlap);
+
+            }
+            /*else {
                 self.draw_tile(x as usize,y as usize, flipped_tile);
+            }*/
+            if overlap  && i == 0{
+                //println!("overlap");
+                    ppu.ppustatus |= 0b01000000;
             }
 
 

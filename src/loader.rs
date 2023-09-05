@@ -5,6 +5,7 @@ use std::io::Read;
 use std::os::unix::prelude::FileExt;
 use crate::ppu::Mirroring;
 #[allow(dead_code)]
+#[derive(Debug)]
 struct Header {
     mapper : u8,
     mirroring: u8,
@@ -29,11 +30,13 @@ impl Header {
         let four_screen = get_bit(header[6], 3);
         let unisystem = get_bit(header[7], 0);
         let playchoice = get_bit(header[7], 1);
-        let nes2 = header[7] & 0b1100;
+        let nes2 = (header[7] & 0b1100) >> 2;
         let prg_rom_size = header[4];
         let chr_rom_size = header[5];
-        println!("rom size: {}, chr rom size: {},  mapper: {}", prg_rom_size,chr_rom_size,mapper);
-        Header { mapper, mirroring, prg_ram_present, trainer_present, four_screen, unisystem, playchoice, nes2, prg_rom_size, chr_rom_size }
+        //println!("rom size: {}, chr rom size: {},  mapper: {}, trainer_present:{}", prg_rom_size,chr_rom_size,mapper, trainer_present);
+        let head = Header { mapper, mirroring, prg_ram_present, trainer_present, four_screen, unisystem, playchoice, nes2, prg_rom_size, chr_rom_size };
+        println!("{:?}", head);
+        head
 
     }
 }
@@ -82,6 +85,9 @@ pub fn mapper000(nes : &mut Nes, rom: &mut Rom){
     else {
         nes.ppu.mirroring = Mirroring::Vertical;
     }
+    let bit1 = nes.memory[0xfffc];
+    let bit2 = nes.memory[0xfffd];
+    nes.pc = endian(bit1, bit2);
     //println!("{:?}",&mut nes.ppu.memory[0..0x2000] );
 
 

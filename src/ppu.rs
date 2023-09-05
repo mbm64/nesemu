@@ -24,6 +24,7 @@ impl ScrollRegister{
         else {
             self.y = byte;
         }
+        
         self.setting_x = !self.setting_x;
     }
     fn new () -> Self {
@@ -45,6 +46,12 @@ impl AddressRegister {
         else {
             self.lo_byte = value;
         }
+        if self.address() >= 0x4000 {
+            println!("mirrored to address of {:#x}", self.address());
+
+            self.hi_byte &= 0b111111;
+            println!("mirrored down to {:#x}", self.address());
+        }
         self.first_byte = !self.first_byte;
 
     }
@@ -61,7 +68,7 @@ impl AddressRegister {
 pub struct PPU{
     pub ppuctrl: u8,
     ppumask: u8,
-    ppustatus:u8,
+    pub ppustatus:u8,
     oamaddr:u8,
     oamdata:u8,
     ppuscroll:u8,
@@ -140,15 +147,18 @@ impl PPU{
         temp
     }
     pub fn write_oamaddr(&mut self,byte:u8){
+        //println!("oamaddr write of {}",byte);
         self.oamaddr = byte;
         self.oamdata = self.oam[self.oamaddr as usize];
 
     }
     pub fn read_oamdata(&mut self) -> u8{
+        //println!("oamdata read");
         self.oamdata
 
     }
     pub fn write_oamdata(&mut self, byte:u8){
+        //println!("oamdata write");
         self.oam[self.oamaddr as usize] = byte;
         self.write_oamaddr(self.oamaddr+1);
     }
@@ -168,13 +178,14 @@ impl PPU{
             },
             0x3f00..=0x3fff => {
                 self.internal_buffer = self.memory[pallete_mirror(address)];
+                return self.internal_buffer;
             },
             0x3000..=0x3eff => {
                 let mirror = address - 0x1000;
                 self.internal_buffer = self.memory[self.vram_address(mirror)];
             },
             _ => {
-                panic!("unexpected address {} when trying to access ppu memory", address);
+                panic!("unexpected address {:#x} when trying to access ppu memory", address);
             }
             
         };
@@ -199,7 +210,7 @@ impl PPU{
             },
 
             _ => {
-                panic!("unexpected address {} when trying to access ppu memory", address);
+                panic!("unexpected address {:#x} when trying to access ppu memory", address);
             }
             
         }
@@ -207,6 +218,7 @@ impl PPU{
 
     }
     pub fn write_ppudata(&mut self, data:u8){
+        
         let address = self.address_register.address();
        match address {
             0..=0x1fff => {
@@ -226,7 +238,7 @@ impl PPU{
             },
 
             _ => {
-                panic!("unexpected address {} when trying to access ppu memory", address);
+                panic!("unexpected address {:#x} when trying to access ppu memory", address);
             }
             
         };
@@ -235,6 +247,7 @@ impl PPU{
     pub fn write_oamdma(&mut self, memslice: [u8;256], byte:u8){
         self.oamdma = byte;
         self.oam = memslice;
+        //println!("oamdma slice write");
         /*
         let shifted = (byte as u16) << 8;
         for i in 0..= 0xff {
@@ -265,8 +278,10 @@ impl PPU{
     }
     
 
-    pub fn tick(&mut self, cycles: u8) -> bool{
+    pub fn tick(&mut self, cycles: u8) -> (bool,bool){
        self.cycles += cycles as u16;
+       let mut nmi = false;
+       let mut vblank = false;
        if self.cycles >= 341 {
            self.cycles -=341;
            self.scanlines+=1;
@@ -274,19 +289,20 @@ impl PPU{
            if self.scanlines == 241 {
                //todo!("vblank");
                self.ppustatus |= 0b10000000;
+               vblank = true;
                //println!("{:#b}", self.ppuctrl);
                if self.ppuctrl & 0b10000000 > 0 {
                    
-               return true;
+               nmi = true;
                }
            }
            if self.scanlines == 262 {
                self.scanlines = 0;
-               self.ppustatus &= !0b10000000;
+               self.ppustatus &= !0b11000000;
                //todo!("last scanline");
            }
        }
-       return false;
+       (nmi,vblank)
 
     }
     pub fn get_tile(&self, tile: usize, bank:usize) -> [u8;64]{

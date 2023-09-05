@@ -20,7 +20,7 @@ impl Controller {
         return 1;
         }
         let bit = get_bit(self.register,self.index);
-        println!("read bit {}, from register {:#b}", bit, self.register);
+        //println!("read bit {}, from register {:#b}", bit, self.register);
         if !self.reset && self.index < 8 {
             self.index+=1;
         }
