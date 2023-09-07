@@ -74,7 +74,7 @@ impl Screen {
                 let bgc = self.get_pixel(x+i, y+j);
                 if bgc != PALLETE[bg as usize] {
                     *overlapped = true;
-                    println!("overlap");
+                    //println!("overlap");
                 }
                 self.set_pixel(x+i, y+j, color);
                 

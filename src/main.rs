@@ -15,6 +15,8 @@ use sdl2::render::WindowCanvas;
 use loader::*;
 use std::env::args;
 use helper::*;
+use std::thread::sleep;
+use std::time;
 
 fn main() {  
     
@@ -60,7 +62,7 @@ fn main() {
     for i in 0..32 {
         for j in 0..30{
                 let tile = nes.ppu.get_tile(i + 32*j, 0);
-                //screen.draw_tile(i*8, j*8, tile);
+                screen.draw_tile(i*8, j*8, tile);
 
         }
     }
@@ -79,15 +81,21 @@ fn main() {
         }
         
         if nmi {nes.nmi_interrput()}
-        //println!("{:#x}  op:{:#x} {:#x} {:x}    A:{:#x} X:{:#x} Y:{:#x} P:{:#x} SP:{:#x} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
+        println!("{:#x}  op:{:#x} {:#x} {:x}    A:{:#x} X:{:#x} Y:{:#x} P:{:#x} SP:{:#x} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
         let cycles_taken = nes.step();
         cycles+= cycles_taken as usize;
         (nmi,vblank) = nes.ppu.tick(cycles_taken*3);
         if vblank {
-            screen.render_background(&mut nes.ppu);
-            screen.render_sprites(&mut nes.ppu);
-            screen.update_canvas(&mut canvas);
-            canvas.present();
+            let (render_bg, render_sprites) = (nes.ppu.ppumask & 0b1000 > 0, nes.ppu.ppumask & 0b10000 > 0);
+            if(render_bg){
+            screen.render_background(&mut nes.ppu);}
+            if(render_sprites) {
+                screen.render_sprites(&mut nes.ppu);
+            }
+            if (render_bg | render_sprites){
+                screen.update_canvas(&mut canvas);
+                canvas.present();
+            }
             //println!("screen refresh");
             //println!("scanlines : {}, cyc:{}", nes.ppu.scanlines, nes.ppu.cycles);
         }
@@ -97,6 +105,16 @@ fn main() {
     }
 
     
+    /*for i in 0..32 {
+        for j in 0..30{
+                let tile = nes.ppu.get_tile(i + 32*j, 0);
+                screen.draw_tile(i*8, j*8, tile);
+
+        }
+    }
+    screen.update_canvas(&mut canvas);
+    canvas.present();
+    sleep(time::Duration::from_secs(10));*/
 
 }
 
