@@ -102,8 +102,9 @@ impl Nes{
             0x4014 => {
                 let add = (value as u16) << 8;
                 let mut slice = [0;256];
+                let oamshift = self.ppu.oamaddr;
                 for i in 0..0xff {
-                    slice[i as usize] = self.read_memory(add + i);
+                    slice[ (i+ oamshift)  as usize] = self.read_memory(add + i as u16 );
                 }
                 self.ppu.write_oamdma(slice, value)
             }

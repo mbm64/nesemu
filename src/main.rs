@@ -52,9 +52,9 @@ fn main() {
     //
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem.window("nesemu", 512, 480).position_centered().build().unwrap();
+    let window = video_subsystem.window("nesemu", 1024, 480).position_centered().build().unwrap();
     let mut canvas = window.into_canvas().build().unwrap();
-    canvas.set_logical_size(256, 240).expect("err with logical size");
+    canvas.set_logical_size(512, 240).expect("err with logical size");
     let mut event_pump = sdl_context.event_pump().unwrap();
     canvas.set_draw_color(hex_to_color(0));
     canvas.present();
@@ -81,7 +81,7 @@ fn main() {
         }
         
         if nmi {nes.nmi_interrput()}
-        println!("{:#x}  op:{:#x} {:#x} {:x}    A:{:#x} X:{:#x} Y:{:#x} P:{:#x} SP:{:#x} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
+        //println!("{:#x}  op:{:#x} {:#x} {:x}    A:{:#x} X:{:#x} Y:{:#x} P:{:#x} SP:{:#x} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
         let cycles_taken = nes.step();
         cycles+= cycles_taken as usize;
         (nmi,vblank) = nes.ppu.tick(cycles_taken*3);

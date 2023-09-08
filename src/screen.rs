@@ -8,23 +8,26 @@ const PALLETE: [u32;0x40] = [
     0xffffff, 0x53aeff, 0x9085ff, 0xd365ff, 0xff57ff, 0xff5dcf, 0xff7757, 0xfa9e00, 0xbdc700, 0x7ae700, 0x43f611, 0x26ef7e, 0x2cd5e6, 0x4e4e4e, 0x000000, 0x000000,
     0xffffff, 0xb6e1ff, 0xced1ff, 0xe9c3ff, 0xffbcff, 0xffbdf4, 0xffc8c3, 0xffd59a, 0xe9e681, 0xcef481, 0xb6fb9a, 0xa9fac3, 0xa9f0f4, 0xb8b8b8, 0x000000, 0x000000];
 pub struct Screen {
-    screen: [u32; 256*240],
-    pallete: [u8;4]
+    screen: [u32; 512*240],
+    pallete: [u8;4],
+    xscroll: u8,
+    yscroll: u8
 }
 impl Screen {
     pub fn new() -> Self{
-        Screen { screen: [0;256*240], pallete: [0x1,0x23,0x27,0x30]}
+        Screen { screen: [0;512*240], pallete: [0x1,0x23,0x27,0x30], xscroll:0 , yscroll: 0}
     }
     pub fn set_pixel(&mut self, x:usize, y:usize, color:u32) {
-        let index = (x as usize) + (y as usize)*256;
+        let index = (x as usize) + (y as usize)*512;
         self.screen[index] = color;
     }
     pub fn get_pixel(&self, x:usize, y:usize) -> u32{
-        self.screen[x + y*256]
+        //println!("({},{})",x,y);
+        self.screen[x + y*512]
     }
     pub fn draw_tile(&mut self, x:usize, y:usize, tile:[u8;64]){
         for i in 0..8 {
-            if (x + i) >= 256 { continue; }
+            //if (x + i) >= 256 { continue; }
             for j in 0..8 {
 
                 if y+j>= 240 {continue;}
@@ -39,9 +42,9 @@ impl Screen {
 
     }
     pub fn draw_sprite_behind_bg(&mut self, x:usize, y:usize,bg:u8, tile:[u8;64], overlapped: &mut bool){
-
+        let x = x+self.xscroll as usize;
         for i in 0..8 {
-            if (x + i) >= 256 { continue; }
+            //if (x + i) >= 256 { continue; }
             for j in 0..8 {
 
                 if y+j>= 240 {continue;}
@@ -61,8 +64,9 @@ impl Screen {
 
     }
     pub fn draw_sprite_0(&mut self, x:usize, y:usize,bg:u8, tile:[u8;64],overlapped: &mut bool){
+        let x = x + self.xscroll as usize;
         for i in 0..8 {
-            if (x + i) >= 256 { continue; }
+            //if (x + i) >= 256 { continue; }
             for j in 0..8 {
 
                 if y+j>= 240 {continue;}
@@ -105,6 +109,9 @@ impl Screen {
             for j in 0..240{
                 canvas.set_draw_color(hex_to_color(self.get_pixel(i as usize, j as usize)));
                 canvas.draw_point(sdl2::rect::Point::new(i, j)).expect("err drawing point");
+                canvas.set_draw_color(hex_to_color(self.get_pixel(i as usize + 256, j as usize)));
+                canvas.draw_point(sdl2::rect::Point::new(i+256, j)).expect("err drawing point");
+
             }
         }
     }
@@ -150,11 +157,53 @@ impl Screen {
 
            self.draw_tile((x*8) as usize, (y*8) as usize, tile);
         }
+        let shift = match ppu.mirroring {
+            crate::ppu::Mirroring::Vertical => 0x400,
+            crate::ppu::Mirroring::Horizontal => 0x800, 
+            _ => 0
+            
+        };
+        if shift == 0 { return; }
+        let starting_address = starting_address + shift;
+        for i in 0..0x3c0 {
+           let tilenum = ppu.read_ppudata_add(starting_address + i); 
+           let tile = ppu.get_tile(tilenum as usize, bank as usize);
+           let x = i % 32;
+           //let pal_x = i / 4 % 16;
+           let pal_x = x /4;
+           let y = i/32;
+           //let pal_y = i / 0x80;
+           let pal_y = y / 4;
+           let pallete = ppu.read_ppudata_add(starting_address + 0x3c0 + pal_x + pal_y*8);
+           let pal = match (x % 4 / 2, y % 4 / 2) {
+               (0,0) => pallete & 0b11,
+               (1,0) => (pallete >> 2) & 0b11,
+               (0,1) => (pallete >> 4) & 0b11,
+               (1,1) => (pallete >> 6) & 0b11,
+
+               _ => panic!("error with pallete")
+
+           };
+           let pallete_data = ppu.get_pallete(pal);
+           if pal == 2 {
+               //println!("pallet 2 with the blue {:?}", pallete_data);
+
+           }
+
+           self.pallete = pallete_data;
+
+           self.draw_tile((x*8) as usize + 256, (y*8) as usize, tile);
+        }
+
+
+
 
     }
     
     pub fn render_sprites(&mut self, ppu: &mut PPU){
         for i in (0..256).step_by(4).rev() {
+            self.xscroll = ppu.scroll_register.x;
+            self.yscroll = ppu.scroll_register.y;
             let x = ppu.oam[i+3];
             let y = ppu.oam[i];
             let bank = (ppu.ppuctrl & 0b1000) >>3;
@@ -175,6 +224,7 @@ impl Screen {
                 
             };
             let mut overlap = false;
+            
             if prio > 0{
                 let bg = ppu.read_ppudata_add(0x3f00);
                 self.draw_sprite_behind_bg(x as usize, y as usize, bg, flipped_tile,&mut overlap);

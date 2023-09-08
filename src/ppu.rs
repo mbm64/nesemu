@@ -11,19 +11,25 @@ struct AddressRegister{
     lo_byte:u8,
     first_byte:bool
 }
-struct ScrollRegister{
-    x:u8,
-    y:u8,
+pub struct ScrollRegister{
+    pub x:u8,
+    pub y:u8,
     setting_x:bool
 }
 impl ScrollRegister{
-    pub fn set(&mut self, byte:u8){
+    pub fn set(&mut self, byte:u8, ppuctrl: &mut u8){
+        let mut bit01 = *ppuctrl;
         if self.setting_x {
             self.x = byte;
         }
         else {
             self.y = byte;
+            bit01 &= 00;
+            bit01 |= get_bit(self.x, 7);
+            bit01 |= get_bit(self.y, 7) << 1;
+            *ppuctrl = bit01;
             //println!("{},{}",self.x,self.y);
+            
         }
         
         self.setting_x = !self.setting_x;
@@ -46,13 +52,13 @@ impl AddressRegister {
         }
         else {
             self.lo_byte = value;
-            println!("byte set to {:#X}", self.address());
+            //println!("byte set to {:#X}", self.address());
         }
         if self.address() >= 0x4000 {
-            println!("mirrored the address of {:#x}", self.address());
+            //println!("mirrored the address of {:#x}", self.address());
 
             self.hi_byte &= 0b111111;
-           println!("mirrored down to {:#x}", self.address());
+           //println!("mirrored down to {:#x}", self.address());
         }
         self.first_byte = !self.first_byte;
 
@@ -71,7 +77,7 @@ pub struct PPU{
     pub ppuctrl: u8,
     pub ppumask: u8,
     pub ppustatus:u8,
-    oamaddr:u8,
+    pub oamaddr:u8,
     oamdata:u8,
     ppuscroll:u8,
     ppuaddr:u8,
@@ -82,7 +88,7 @@ pub struct PPU{
     address_register: AddressRegister,
     internal_buffer: u8,
     pub mirroring: Mirroring, 
-    scroll_register: ScrollRegister,
+    pub scroll_register: ScrollRegister,
     pub scanlines:u16,
     pub cycles:u16
 }
@@ -148,6 +154,7 @@ impl PPU{
         let temp = self.ppustatus;
         self.ppustatus &= !0b10000000;
         self.address_register.first_byte = true;
+        self.scroll_register.setting_x = true;
         temp
     }
     pub fn write_oamaddr(&mut self,byte:u8){
@@ -168,7 +175,7 @@ impl PPU{
     }
     pub fn write_ppuscroll(&mut self,byte:u8){
         //println!("write to scroll");
-        self.scroll_register.set(byte);
+        self.scroll_register.set(byte, &mut self.ppuctrl);
     }
     pub fn read_ppudata(&mut self) -> u8{
         let address = self.address_register.address();
@@ -182,8 +189,9 @@ impl PPU{
                 self.internal_buffer = self.memory[self.vram_address(address)];
             },
             0x3f00..=0x3fff => {
-                self.internal_buffer = self.memory[pallete_mirror(address)];
-                return self.internal_buffer;
+                let pal =  self.memory[pallete_mirror(address)];
+                self.internal_buffer = self.memory[self.vram_address(address - 0x1000)];
+                return pal;
             },
             0x3000..=0x3eff => {
                 let mirror = address - 0x1000;
