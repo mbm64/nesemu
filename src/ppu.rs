@@ -17,17 +17,12 @@ pub struct ScrollRegister{
     setting_x:bool
 }
 impl ScrollRegister{
-    pub fn set(&mut self, byte:u8, ppuctrl: &mut u8){
-        let mut bit01 = *ppuctrl;
+    pub fn set(&mut self, byte:u8){
         if self.setting_x {
             self.x = byte;
         }
         else {
             self.y = byte;
-            bit01 &= 00;
-            bit01 |= get_bit(self.x, 7);
-            bit01 |= get_bit(self.y, 7) << 1;
-            *ppuctrl = bit01;
             //println!("{},{}",self.x,self.y);
             
         }
@@ -174,8 +169,8 @@ impl PPU{
         self.write_oamaddr(self.oamaddr+1);
     }
     pub fn write_ppuscroll(&mut self,byte:u8){
-        //println!("write to scroll");
-        self.scroll_register.set(byte, &mut self.ppuctrl);
+        println!("write to scroll at scanline {}", self.scanlines);
+        self.scroll_register.set(byte);
     }
     pub fn read_ppudata(&mut self) -> u8{
         let address = self.address_register.address();
@@ -258,8 +253,10 @@ impl PPU{
        self.increment_ppuaddr();
     }
     pub fn write_oamdma(&mut self, memslice: [u8;256], byte:u8){
+        println!("oamdma");
         self.oamdma = byte;
         self.oam = memslice;
+        self.tick(513*3);
         //println!("oamdma slice write");
         /*
         let shifted = (byte as u16) << 8;
@@ -291,7 +288,7 @@ impl PPU{
     }
     
 
-    pub fn tick(&mut self, cycles: u8) -> (bool,bool){
+    pub fn tick(&mut self, cycles: u16) -> (bool,bool){
        self.cycles += cycles as u16;
        let mut nmi = false;
        let mut vblank = false;
@@ -312,6 +309,8 @@ impl PPU{
            if self.scanlines == 262 {
                self.scanlines = 0;
                self.ppustatus &= !0b11000000;
+               //println!("start display");
+               //vblank = true;
                //todo!("last scanline");
            }
        }

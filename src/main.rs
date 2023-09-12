@@ -84,7 +84,7 @@ fn main() {
         //println!("{:#x}  op:{:#x} {:#x} {:x}    A:{:#x} X:{:#x} Y:{:#x} P:{:#x} SP:{:#x} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
         let cycles_taken = nes.step();
         cycles+= cycles_taken as usize;
-        (nmi,vblank) = nes.ppu.tick(cycles_taken*3);
+        (nmi,vblank) = nes.ppu.tick(cycles_taken as u16*3);
         if vblank {
             let (render_bg, render_sprites) = (nes.ppu.ppumask & 0b1000 > 0, nes.ppu.ppumask & 0b10000 > 0);
             if(render_bg){
