@@ -54,7 +54,7 @@ impl Nes{
     pub fn start() -> Self {
         let emu = Nes{
             memory: [0; 0x10000],
-            pc:0x8000,
+            pc:0xC000,
             sp:0xFD,
             p:0b00100100,
             acc:0,
@@ -81,8 +81,13 @@ impl Nes{
             0x2008..=0x3FFF => self.read_memory((address-0x2000)%8 + 0x2000),
             0x4016 => self.controller_1.read(),
             0x4000..=0x401F => 0,
+            0x6000 => {
+                //println!("read");
+                self.memory[address as usize]
+
+            },
             0x4020..=0xFFFF => self.memory[address as usize],
-            _ => panic!("invalid read into cpu memory at {}", address)
+            _ => panic!("invalid read into cpu memory at {:X}", address)
         }
 
     }
@@ -112,10 +117,11 @@ impl Nes{
             0x2008..= 0x3fff => self.write_memory((address - 0x2000) % 8 + 0x2000, value),
             0x4016 => self.controller_1.write(value),
             //to do apu io
-            0x4000..= 0x401f => (),
+            0x4000..= 0x401f => (), //println!("trying to write {:X} to {:X}", value,address),
+            0x4020..=0xFFFF => (), //println!("cartridge space {:X}", address),
 
 
-            _ => panic!("writing to invalid address {}", address)
+            _ => panic!("writing to invalid address {:X}", address)
         };
     }
     pub fn nmi_interrput(&mut self){
@@ -125,9 +131,9 @@ impl Nes{
         self.push_to_stack(self.p);
         self.p |= 0b100;
         let byte1 = self.read_memory(0xFFFA);
-        let byte2 = self.read_memory(0xfffB);
+        let byte2 = self.read_memory(0xFFFB);
         self.pc = endian(byte1, byte2);
-        //println!("nmi interupt");
+        println!("nmi interupt {:X}", self.pc);
 
     }
 

@@ -50,7 +50,7 @@ impl AddressRegister {
             //println!("byte set to {:#X}", self.address());
         }
         if self.address() >= 0x4000 {
-            //println!("mirrored the address of {:#x}", self.address());
+            println!("mirrored the address of {:#x}", self.address());
 
             self.hi_byte &= 0b111111;
            //println!("mirrored down to {:#x}", self.address());
@@ -148,6 +148,7 @@ impl PPU{
     pub fn read_ppustatus(&mut self) -> u8{
         let temp = self.ppustatus;
         self.ppustatus &= !0b10000000;
+        //println!("ppustatus read");
         self.address_register.first_byte = true;
         self.scroll_register.setting_x = true;
         temp
@@ -169,7 +170,7 @@ impl PPU{
         self.write_oamaddr(self.oamaddr+1);
     }
     pub fn write_ppuscroll(&mut self,byte:u8){
-        println!("write to scroll at scanline {}", self.scanlines);
+        //println!("write to scroll at scanline {}, of value {}", self.scanlines,byte);
         self.scroll_register.set(byte);
     }
     pub fn read_ppudata(&mut self) -> u8{
@@ -253,7 +254,7 @@ impl PPU{
        self.increment_ppuaddr();
     }
     pub fn write_oamdma(&mut self, memslice: [u8;256], byte:u8){
-        println!("oamdma");
+        //println!("oamdma");
         self.oamdma = byte;
         self.oam = memslice;
         self.tick(513*3);

@@ -50,6 +50,7 @@ fn indirect_indexed_y(nes: &mut Nes) -> u16{
     let bit1 = nes.read_memory(add as u16);
     let bit2 = nes.read_memory((add+1) as u16);
     let address = endian(bit1,bit2);
+    //println!("grabbing {:X} from {:X} (),y",nes.read_memory(address+nes.y as u16),address );
     if page_crossed(address, nes.y) {
         nes.page_cross = 1;
     }

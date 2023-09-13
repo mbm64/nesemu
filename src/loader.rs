@@ -35,7 +35,7 @@ impl Header {
         let chr_rom_size = header[5];
         //println!("rom size: {}, chr rom size: {},  mapper: {}, trainer_present:{}", prg_rom_size,chr_rom_size,mapper, trainer_present);
         let head = Header { mapper, mirroring, prg_ram_present, trainer_present, four_screen, unisystem, playchoice, nes2, prg_rom_size, chr_rom_size };
-        println!("{:?}", head);
+        //println!("{:?}", head);
         head
 
     }
@@ -87,7 +87,7 @@ pub fn mapper000(nes : &mut Nes, rom: &mut Rom){
     }
     let bit1 = nes.memory[0xfffc];
     let bit2 = nes.memory[0xfffd];
-    nes.pc = endian(bit1, bit2);
+    //nes.pc = endian(bit1, bit2);
     //println!("{:?}",&mut nes.ppu.memory[0..0x2000] );
 
 
