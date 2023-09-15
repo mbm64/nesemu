@@ -81,7 +81,7 @@ fn main() {
         }
         
         if nmi {nes.nmi_interrput()}
-        println!("{:0>4X}  op:{:X} {:X} {:X}    A:{:0>2X} X:{:0>2X} Y:{:0>2X} P:{:0>2X} SP:{:0>2X} CYC:{} PPU: Scan: {} CYC{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
+        println!("{:0>4X}  op:{:X} {:X} {:X}    A:{:0>2X} X:{:0>2X} Y:{:0>2X} P:{:0>2X} SP:{:0>2X} CYC:{} PPU: Scan: {} cyc{}",nes.pc, nes.memory[nes.pc as usize], nes.memory[nes.pc as usize +1], nes.memory[nes.pc as usize +2], nes.acc, nes.x, nes.y, nes.p, nes.sp, cycles, nes.ppu.scanlines, nes.ppu.cycles);
         let mut cycles_taken = nes.step();
         if nmi { cycles_taken +=7; }
         cycles+= cycles_taken as usize;

@@ -303,7 +303,7 @@ fn op1E(nes: &mut Nes)-> u8{
 fn branch (nes:&mut Nes, jump:u16) -> u8{
     let a = nes.pc;
     nes.pc += jump;
-    if page_crossed(a, jump as u8) {
+    if page_crossed_rel(a, jump) {
         return 5;
     }
     3
@@ -397,7 +397,7 @@ fn op00(nes: &mut Nes) -> u8{
     let bytes = unendian(nes.pc);
     nes.push_to_stack(bytes[1]);
     nes.push_to_stack(bytes[0]);
-    nes.push_to_stack(nes.p);
+    nes.push_to_stack(nes.p | 0b110000);
     let byte1 = nes.read_memory(0xFFFE);
     let byte2 = nes.read_memory(0xFFFF);
     nes.pc = endian(byte1, byte2);
@@ -1105,7 +1105,7 @@ fn op48(nes:&mut Nes) -> u8{
 }
 //push processor status
 fn op08(nes:&mut Nes) -> u8{
-    nes.push_to_stack(nes.p);
+    nes.push_to_stack(nes.p | 0b110000);
     3
 }
 //pull accumulator
@@ -1547,8 +1547,8 @@ fn op80(nes:&mut Nes) -> u8{
     2
 }
 fn op1C(nes:&mut Nes) -> u8{
-    nes.nextabs();
-    5
+    absolute_x(nes);
+    4 + nes.page_cross
 }
 
 

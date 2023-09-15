@@ -87,7 +87,7 @@ pub fn mapper000(nes : &mut Nes, rom: &mut Rom){
     }
     let bit1 = nes.memory[0xfffc];
     let bit2 = nes.memory[0xfffd];
-    //nes.pc = endian(bit1, bit2);
+    nes.pc = endian(bit1, bit2);
     //println!("{:?}",&mut nes.ppu.memory[0..0x2000] );
 
 

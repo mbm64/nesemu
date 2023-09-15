@@ -30,6 +30,17 @@ pub fn page_crossed(address:u16, added: u8) -> bool {
        return false;
    }
 }
+pub fn page_crossed_rel(address:u16,added: u16) -> bool{
+    let c = address + added;
+   let mask = 0xFF00;
+   if (c & mask) != (address & mask){
+       return true;
+   }
+   else{
+       return false;
+   }
+
+}
 pub fn hex_to_color(color:u32) -> Color{
     let r = (color >> 16) & 0xff;
     let g = (color >> 8) & 0xff;
