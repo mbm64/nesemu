@@ -87,7 +87,7 @@ fn add_with_carry(nes : &mut Nes, b:u8){
     nes.reset_flags(0b11000011);
     let c = a+b+carry;
     
-    if c < a {
+    if c < a  || c < b{
         //carry 
         nes.set_flags(1);
 
@@ -1257,6 +1257,9 @@ fn op60(nes:&mut Nes) -> u8{
 }
 //subtract with carry 
 fn subtract_with_carry(nes:&mut Nes, a:u8){
+    add_with_carry(nes, !a);
+}
+/*fn subtract_with_carry(nes:&mut Nes, a:u8){
     let carry = get_bit(nes.p, 0);
     let c = nes.acc - a - (1-carry);
     nes.reset_flags(0b11000000);
@@ -1281,7 +1284,7 @@ fn subtract_with_carry(nes:&mut Nes, a:u8){
         nes.reset_flags(0b1);
     }
     nes.acc = c;
-}
+}*/
 //imediate
 fn opE9(nes:&mut Nes) -> u8{
     let a = immediate(nes);

@@ -56,7 +56,7 @@ impl Nes{
             memory: [0; 0x10000],
             pc:0xC000,
             sp:0xFD,
-            p:0b00100100,
+            p:0x04,
             acc:0,
             x:0,
             y:0,
@@ -133,7 +133,7 @@ impl Nes{
         let byte1 = self.read_memory(0xFFFA);
         let byte2 = self.read_memory(0xFFFB);
         self.pc = endian(byte1, byte2);
-        println!("nmi interupt {:X}", self.pc);
+        //println!("nmi interupt {:X}", self.pc);
 
     }
 

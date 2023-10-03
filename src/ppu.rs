@@ -170,7 +170,7 @@ impl PPU{
         self.write_oamaddr(self.oamaddr+1);
     }
     pub fn write_ppuscroll(&mut self,byte:u8){
-        //println!("write to scroll at scanline {}, of value {}", self.scanlines,byte);
+        println!("write to scroll at scanline {}, of value {}", self.scanlines,byte);
         self.scroll_register.set(byte);
     }
     pub fn read_ppudata(&mut self) -> u8{
@@ -231,7 +231,7 @@ impl PPU{
         let address = self.address_register.address();
        match address {
             0..=0x1fff => {
-                self.memory[address as usize] = data;
+                //self.memory[address as usize] = data;
             },
             0x2000..=0x2fff => {
                 self.memory[self.vram_address(address)] = data;
